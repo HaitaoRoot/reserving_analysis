@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+from .clm import compute_triangle_factor, fill_triangle_loss
 
 
 def CountFrequency(my_list): 
@@ -25,43 +28,6 @@ def MergeDict(dict1, dict2):
     res = {**dict1, **dict2}
     return res
 
-def creat_triangle_df(df):
-    
-    acc_month_list = df.accident_month.unique()
-    col_names = []
-    for i in range(1, len(df.development_age.unique())+1):
-        col_names.append('reported_loss_age'+str(i))
-    
-    triangle_df = pd.DataFrame(index=pd.to_datetime(acc_month_list), columns=col_names)
-    
-    return triangle_df
-
-def slice_data_by_exposure_and_age(df):
-    
-    sliced_data = []
-    acc_month_list = list(df.accident_month.unique())
-    for acc_month in acc_month_list:
-        acc_month_df = df[df.accident_month == acc_month]
-        develop_age_num = len(acc_month_df.development_age.unique())
-        
-        sliced_data_age = []
-        for i in range(1, develop_age_num+1):
-            temp = acc_month_df[acc_month_df.development_age == i]
-            sliced_data_age.append([i, temp])
-        sliced_data.append([acc_month, sliced_data_age])
-    return sliced_data
-
-def slice_data_by_exposure(df):
-    
-    sliced_data = []
-    acc_month_list = list(df.accident_month.unique())
-    for acc_month in acc_month_list:
-        acc_month_df = df[df.accident_month == acc_month]
-        uni_acc = acc_month_df.claim_feature_id.unique()
-        
-        sliced_data.append([acc_month, acc_month_df, uni_acc])
-        
-    return sliced_data
 
 def resample_feat_id(uni_acc):
     
@@ -82,6 +48,42 @@ def resample_feat_id(uni_acc):
     return all_feat_id_count_dict
 
 
+def cal_loss(acc_data, feat_dict):
+    loss = 0
+    cal = acc_data[['claim_feature_id', 'reported_loss']].values
+    for i in range(0, len(cal)):
+        feat_report_loss = cal[i][1]
+        feat_count = feat_dict[cal[i][0]]
+        feat_loss = feat_report_loss*feat_count
+        loss += feat_loss
+
+
+    return loss
+
+# def boostrap_fill_all(df, df_exposure, df_exposure_age, random_seed):
+def bootstrap_fill_all(df, df_exposure, df_exposure_age):   
+    triangle_df = creat_triangle_df(df)
+    
+    for i in range(0, len(df_exposure_age)):
+      
+#         all_feat_id_count_dict = resample_feat_id(df_exposure[i][2], random_seed)
+        all_feat_id_count_dict = resample_feat_id(df_exposure[i][2])
+    
+        acc_month_df = df_exposure_age[i][1]
+        acc_month = df_exposure_age[i][0]
+        
+        for j in range(0, len(acc_month_df)):
+            
+            acc_month_age = acc_month_df[j][1]
+            loss = cal_loss(acc_month_age, all_feat_id_count_dict)
+            
+            
+            triangle_df.loc[str(acc_month), 'reported_loss_age'+str(j+1)] = loss
+            
+            
+    return triangle_df
+       
+
 def creat_triangle_df(df):
     
     acc_month_list = df.accident_month.unique()
@@ -94,43 +96,51 @@ def creat_triangle_df(df):
     return triangle_df
 
 
-def compute_triangle_factor(df):
+def bootstrap_clm(df, df_exposure, df_exposure_age):
     
-    triangle_factor = pd.DataFrame([])
-    for i in range(0, df.shape[1]-1):
-        triangle_factor['age_'+str(i+1)+'_to_'+str(i+2)] = df.iloc[:,i+1]/df.iloc[:,i]
-
-    triangle_factor.loc['mean'] = triangle_factor.mean()
-    return triangle_factor
-
-
-def fill_triangle_loss(df, df_fact):
-    num_rows, num_col = df.shape
-    for i in range(0, num_col-1):
-        factor = df_fact.loc['mean'][i]
-
-        for j in range(0, i+1):
-            df.iloc[num_rows-1-j,i+1] = df.iloc[num_rows-1-j,i]*factor 
-    return df
-
-
-def boostrap_clm(df, df_exposure, df_exposure_age):
-    
-    triangle_loss = boostrap_fill_all(df, df_exposure, df_exposure_age)
+    triangle_loss = bootstrap_fill_all(df, df_exposure, df_exposure_age)
     triangle_factor = compute_triangle_factor(triangle_loss)
     triangle_loss_filled = fill_triangle_loss(triangle_loss, triangle_factor) 
     
             
-    return triangle_factor,triangle_loss_filled
+    return triangle_factor, triangle_loss_filled
 
 
 # use reported loss times factor (from boostrap samples)
-def boostrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, triangle_loss_origin):
+def bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, triangle_loss_origin):
     
-    triangle_loss = boostrap_fill_all(df, df_exposure, df_exposure_age)
+    triangle_loss = bootstrap_fill_all(df, df_exposure, df_exposure_age)
     triangle_factor_b = compute_triangle_factor(triangle_loss)
 
     triangle_loss_filled_b = fill_triangle_loss(triangle_loss_origin, triangle_factor_b)
     
             
     return triangle_factor_b, triangle_loss_filled_b
+
+
+def bootstrap_pre_by_exposure(df, df_exposure, df_exposure_age, n):
+    
+    factors_df = pd.DataFrame([])
+    df_b = pd.DataFrame([])
+    for i in range(0, n):
+        if i%100 == 0:
+            print("current number: ", i)
+        fa_df, df_loss = bootstrap_clm(df, df_exposure, df_exposure_age)
+        factors_df = pd.concat([factors_df, fa_df.loc[['mean']]], axis=0)
+        df_b['clm_b'+ str(i)] =  df_loss.iloc[:,-1]
+        
+    return factors_df, df_b
+
+
+def bootstrap_pre_b_factor_by_exposure(df, df_exposure, df_exposure_age, df_loss, n):
+    
+    factors_df = pd.DataFrame([])
+    df_b = pd.DataFrame([])
+    for i in range(0, n):
+        if i%100 == 0:
+            print("current number: ", i)
+        fa_df, df_loss = bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, df_loss)
+        factors_df = pd.concat([factors_df, fa_df.loc[['mean']]], axis=0)
+        df_b['clm_b'+ str(i)] =  df_loss.iloc[:,-1]
+        
+    return factors_df, df_b

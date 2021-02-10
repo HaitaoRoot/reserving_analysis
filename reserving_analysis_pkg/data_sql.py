@@ -33,7 +33,7 @@ def dataframe_from_sql_query(connection, sql_query):
 
 
 def load_data_from_sql(file_name):
-    sql_path = '/Users/haitaoliu/Documents/sql/'
+    sql_path = '/Users/haitaoliu/Documents/reserving_analysis/sql/'
     fd = open(sql_path + file_name, 'r')
     sqlFile = fd.read()
     fd.close()
