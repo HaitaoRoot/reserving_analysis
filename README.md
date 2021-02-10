@@ -1,2 +1,2 @@
-# reserving_analysis_pkg
+# reserving analysis
 Python code for reserving analysis
