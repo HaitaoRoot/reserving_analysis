@@ -12,24 +12,35 @@ def triangle_report_loss_origin(df):
     return reported_loss_acc_age
 
 
-def compute_triangle_factor(df):
+def compute_triangle_factor(df, df_ep=None):
     
     triangle_factor = pd.DataFrame([])
     for i in range(0, df.shape[1]-1):
         triangle_factor['age_'+str(i+1)+'_to_'+str(i+2)] = df.iloc[:,i+1]/df.iloc[:,i]
 
-    triangle_factor.loc['mean'] = triangle_factor.mean()
+    if df_ep is None:
+        print(df_ep== None)
+        # simple average 
+        triangle_factor.loc['mean'] = triangle_factor.mean()
+    else:
+        # weighted average 
+        df_ep_1 = df_ep.iloc[0:,1:]
+        df_ep_1.columns=list(triangle_factor.columns)
+        triangle_factor.loc['mean'] = (df_ep_1*triangle_factor).sum()/df_ep_1.sum()
+        
     return triangle_factor
 
 
 def fill_triangle_loss(df, df_fact):
+
+    df1 = df.copy()
     num_rows, num_col = df.shape
     for i in range(0, num_col-1):
         factor = df_fact.loc['mean'][i]
 
         for j in range(0, i+1):
-            df.iloc[num_rows-1-j,i+1] = df.iloc[num_rows-1-j,i]*factor 
-    return df
+            df1.iloc[num_rows-1-j,i+1] = df1.iloc[num_rows-1-j,i]*factor 
+    return df1
 
 
 def triangle_ultimate_loss_act(df):

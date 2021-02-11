@@ -96,10 +96,10 @@ def creat_triangle_df(df):
     return triangle_df
 
 
-def bootstrap_clm(df, df_exposure, df_exposure_age):
+def bootstrap_clm(df, df_exposure, df_exposure_age, df_ep):
     
     triangle_loss = bootstrap_fill_all(df, df_exposure, df_exposure_age)
-    triangle_factor = compute_triangle_factor(triangle_loss)
+    triangle_factor = compute_triangle_factor(triangle_loss, df_ep)
     triangle_loss_filled = fill_triangle_loss(triangle_loss, triangle_factor) 
     
             
@@ -107,10 +107,10 @@ def bootstrap_clm(df, df_exposure, df_exposure_age):
 
 
 # use reported loss times factor (from boostrap samples)
-def bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, triangle_loss_origin):
+def bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, triangle_loss_origin, df_ep):
     
     triangle_loss = bootstrap_fill_all(df, df_exposure, df_exposure_age)
-    triangle_factor_b = compute_triangle_factor(triangle_loss)
+    triangle_factor_b = compute_triangle_factor(triangle_loss, df_ep)
 
     triangle_loss_filled_b = fill_triangle_loss(triangle_loss_origin, triangle_factor_b)
     
@@ -118,28 +118,28 @@ def bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, trian
     return triangle_factor_b, triangle_loss_filled_b
 
 
-def bootstrap_pre_by_exposure(df, df_exposure, df_exposure_age, n):
+def bootstrap_pre_by_exposure(df, df_exposure, df_exposure_age, df_ep, n):
     
     factors_df = pd.DataFrame([])
     df_b = pd.DataFrame([])
     for i in range(0, n):
         if i%100 == 0:
             print("current number: ", i)
-        fa_df, df_loss = bootstrap_clm(df, df_exposure, df_exposure_age)
+        fa_df, df_loss = bootstrap_clm(df, df_exposure, df_exposure_age, df_ep)
         factors_df = pd.concat([factors_df, fa_df.loc[['mean']]], axis=0)
         df_b['clm_b'+ str(i)] =  df_loss.iloc[:,-1]
         
     return factors_df, df_b
 
 
-def bootstrap_pre_b_factor_by_exposure(df, df_exposure, df_exposure_age, df_loss, n):
+def bootstrap_pre_b_factor_by_exposure(df, df_exposure, df_exposure_age, df_loss, df_ep, n):
     
     factors_df = pd.DataFrame([])
     df_b = pd.DataFrame([])
     for i in range(0, n):
         if i%100 == 0:
             print("current number: ", i)
-        fa_df, df_loss = bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, df_loss)
+        fa_df, df_loss = bootstrap_clm_reported_loss_b_factor(df, df_exposure, df_exposure_age, df_loss, df_ep)
         factors_df = pd.concat([factors_df, fa_df.loc[['mean']]], axis=0)
         df_b['clm_b'+ str(i)] =  df_loss.iloc[:,-1]
         
