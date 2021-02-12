@@ -32,12 +32,13 @@ def dataframe_from_sql_query(connection, sql_query):
     return pd.DataFrame(list(rows), columns=column_names)
 
 
-def load_data_from_sql(file_name):
+def load_data_from_sql(file_name, asofdate):
     sql_path = '/Users/haitaoliu/Documents/reserving_analysis/sql/'
     fd = open(sql_path + file_name, 'r')
     sqlFile = fd.read()
     fd.close()
-    
+
+    sqlFile = sqlFile.replace('para_asofdate', asofdate)
     con = db_connection()
     roll_back_from_sql_erorr(con)
     df = dataframe_from_sql_query(con, sqlFile)

@@ -20,10 +20,13 @@ join edw.dim_date asofdt on asofdt.date_k = ffa.as_of_date_k
 
 
 where 
-    m.first_day_of_month between '2019-02-01' and '2020-12-01'
-    and asofdt.date_actual <= '2020-12-31'
+    -- m.first_day_of_month between '2019-02-01' and '2020-12-01'
+    -- and asofdt.date_actual <= '2020-12-31'
+    m.first_day_of_month between '2019-02-01' and 'para_asofdate'
+    and asofdt.date_actual <= 'para_asofdate'
     and coverage = 'coll'
     
+
 group by 1,2,3,4
 having sum(earned_premium_dollar_amount) > 0
 order by 1,2,3,4
