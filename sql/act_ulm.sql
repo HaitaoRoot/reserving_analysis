@@ -9,7 +9,7 @@ select
     end as coverage,
 
     -- this is ultimate loss, net of salvage and subrogation
-    SUM(ffa.earned_premium_dollar_amount) AS earned_premium
+    sum(ffa.actuarial_ibner_dollar_amount + ffa.actuarial_pure_ibnr_dollar_amount + ffa.reported_loss_dollar_amount) as act_ultimate_loss
 
  
 from edw.fact_financials_accumulating ffa
@@ -25,7 +25,7 @@ where
     -- and asofdt.date_actual <= '2020-12-31'
     m.first_day_of_month between '2019-02-01' and 'para_asofdate'
     and asofdt.date_actual <= 'para_asofdate'
-    and coverage = 'coll'
+    and coverage = 'para_cov'
     
 group by 1,2,3,4
 having sum(earned_premium_dollar_amount) > 0

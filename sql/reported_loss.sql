@@ -27,5 +27,5 @@ where acc_date.date_actual between '2019-02-01' and (select max(date_actual) fro
     and fnol_date.date_actual >= '2019-02-01' and feat_date.date_actual > '1900-01-01'
     -- and asofdt.date_actual <= '2020-12-31' 
     and asofdt.date_actual <= 'para_asofdate'
-    and coverage = 'coll'
+    and coverage = 'para_cov'
 order by 1,2,3

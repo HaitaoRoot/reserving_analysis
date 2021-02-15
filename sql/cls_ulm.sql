@@ -24,7 +24,7 @@ where
     -- and asofdt.date_actual <= '2020-12-31'
     m.first_day_of_month between '2019-02-01' and 'para_asofdate'
     and asofdt.date_actual <= 'para_asofdate'
-    and coverage = 'coll'
+    and coverage = 'para_cov'
     
 
 group by 1,2,3,4
